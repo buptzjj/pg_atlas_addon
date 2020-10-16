@@ -1,0 +1,256 @@
+{
+    "enumDefs": [],
+    "structDefs": [],
+    "classificationDefs": [],
+    "entityDefs": [{
+            "name": "postgresql_instance",
+            "description": "Instance that the postgresql server is running on",
+            "superTypes": ["rdbms_instance"],
+            "serviceType": "postgresql",
+            "typeVersion": "1.1",
+            "attributeDefs": []
+        },
+        {
+            "name": "postgresql_db",
+            "description": "a database (schema) in an postgresql",
+            "superTypes": ["rdbms_db"],
+            "serviceType": "postgresql",
+            "typeVersion": "1.1",
+            "attributeDefs": []
+        },
+        {
+            "name": "postgresql_table",
+            "description": "a table in an postgresql database (schema)",
+            "superTypes": ["rdmbs_table"],
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "options": {
+                "schemaElementsAttribute": "columns"
+            },
+            "attributeDefs": []
+        },
+        {
+            "name": "postgresql_column",
+            "description": "a column in an postgresql table",
+            "superTypes": ["rdbms_column"],
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "options": {
+                "schemaAttributes": "[\"name\", \"description\", \"owner\", \"data_type\", \"comment\", \" isPrimaryKey\", \" isNullable\"]"
+            },
+            "attributeDefs": []
+        },
+        {
+            "name": "postgresql_index",
+            "description": "An index on an postgresql table",
+            "superTypes": ["rdbms_index"],
+            "serviceType": "postgresql",
+            "typeVersion": "1.1",
+            "attributeDefs": []
+        },
+        {
+            "name": "postgresql_foreign_key",
+            "description": null,
+            "superTypes": ["rdbms_foreign_key"],
+            "serviceType": "postgresql",
+            "typeVersion": "1.1",
+            "attributeDefs": []
+        }
+    ],
+    "relationshipDefs": [{
+            "name": "postgresql_instance_databases",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__postgresql_instance.databases",
+            "endDef1": {
+                "type": "postgresql_instance",
+                "name": "databases",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_db",
+                "name": "instance",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "postgresql_db_tables",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__postgresql_db.tables",
+            "endDef1": {
+                "type": "postgresql_db",
+                "name": "tables",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_table",
+                "name": "db",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "postgresql_table_columns",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__postgresql_table.columns",
+            "endDef1": {
+                "type": "postgresql_table",
+                "name": "columns",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_column",
+                "name": "table",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "postgresql_table_indexes",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__postgresql_table.indexes",
+            "endDef1": {
+                "type": "postgresql_table",
+                "name": "indexes",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_index",
+                "name": "table",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "postgresql_index_columns",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__postgresql_index.columns",
+            "endDef1": {
+                "type": "postgresql_index",
+                "name": "columns",
+                "isContainer": false,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_column",
+                "name": "indexes",
+                "isContainer": false,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "postgresql_table_foreign_key",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "COMPOSITION",
+            "relationshipLabel": "__postgresql_table.foreign_keys",
+            "endDef1": {
+                "type": "postgresql_table",
+                "name": "foreign_keys",
+                "isContainer": true,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_foreign_key",
+                "name": "table",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "postgresql_foreign_key_key_columns",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__postgresql_foreign_key.key_columns",
+            "endDef1": {
+                "type": "postgresql_foreign_key",
+                "name": "key_columns",
+                "isContainer": false,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_column",
+                "name": "key_column_references",
+                "isContainer": false,
+                "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "postgresql_foreign_key_table_references",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__postgresql_foreign_key.references_table",
+            "endDef1": {
+                "type": "postgresql_foreign_key",
+                "name": "references_table",
+                "isContainer": false,
+                "cardinality": "SINGLE",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_table",
+                "name": "foreign_key_references",
+                "isContainer": false,
+                "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
+        },
+        {
+            "name": "postgresql_foreign_key_column_references",
+            "serviceType": "postgresql",
+            "typeVersion": "1.2",
+            "relationshipCategory": "ASSOCIATION",
+            "relationshipLabel": "__postgresql_foreign_key.references_columns",
+            "endDef1": {
+                "type": "postgresql_foreign_key",
+                "name": "references_columns",
+                "isContainer": false,
+                "cardinality": "SET",
+                "isLegacyAttribute": true
+            },
+            "endDef2": {
+                "type": "postgresql_column",
+                "name": "foreign_key_references",
+                "isContainer": false,
+                "cardinality": "SET"
+            },
+            "propagateTags": "NONE"
+        }
+    ]
+}

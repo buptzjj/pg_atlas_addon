@@ -22,12 +22,14 @@ public class Listener extends Thread {
     private Connection conn;
     private PGConnection pgConn;
     private Gson gson;
+    private AtlasManager atlasManager;
 
     Listener(Connection conn) throws SQLException {
         logger.debug("init pg listener");
         this.conn = conn;
         this.pgConn = (PGConnection) conn;
         this.gson = new Gson();
+        this.atlasManager = new AtlasManager();
         Statement stmt = conn.createStatement();
         stmt.execute(MessageFormat.format("listen {0}", Constant.NOTIFY_CHANNEL));
         stmt.close();
@@ -47,8 +49,14 @@ public class Listener extends Thread {
                         List<DDLEvent> ddlEventList = gson.fromJson(notifications[i].getParameter(),
                                 new TypeToken<List<DDLEvent>>() {
                                 }.getType());
-                        for (DDLEvent ddlEvent : ddlEventList) {
-                            System.out.println(ddlEvent.toString());
+                        if (null != ddlEventList) {
+                            for (DDLEvent ddlEvent : ddlEventList) {
+                                // System.out.println(ddlEvent.toString());
+                                if (ddlEvent.getEventTag().equalsIgnoreCase("CREATE TABLE")
+                                        && ddlEvent.getObjectType().equalsIgnoreCase("table")) {
+                                    this.atlasManager.createEntity(ddlEvent);
+                                }
+                            }
                         }
                     }
                 }

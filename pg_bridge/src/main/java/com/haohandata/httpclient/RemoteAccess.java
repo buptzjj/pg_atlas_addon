@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 
 import com.google.api.client.http.ByteArrayContent;
 import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpRequestInitializer;
@@ -22,7 +23,6 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.JsonObjectParser;
-
 import com.haohandata.Constant;
 
 import org.slf4j.Logger;
@@ -65,6 +65,9 @@ public class RemoteAccess {
                 public void initialize(HttpRequest request) {
                     request.setConnectTimeout(Constant.HTTP_REQUEST_TIMEOUT);  //设置HTTP请求的超时时间：3秒
                     request.setParser(new JsonObjectParser(jsonFactory));
+                    HttpHeaders httpHeaders = new HttpHeaders();
+                    httpHeaders.setBasicAuthentication(Constant.ATLAS_USER, Constant.ATLAS_PASSWORD);
+                    request.setHeaders(httpHeaders);
                 }
             });
         } catch (GeneralSecurityException ex) {

@@ -10,6 +10,8 @@ public class Constant {
 
     public static final String ATLAS_IP = "10.10.3.101";
     public static final int ATLAS_PORT = 21000;
+    public static final String ATLAS_USER = "admin"; 
+    public static final String ATLAS_PASSWORD = "admin"; 
 
     public static final int HTTP_REQUEST_TIMEOUT = 60000;
 }

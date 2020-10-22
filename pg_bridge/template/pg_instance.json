@@ -1,0 +1,16 @@
+{
+    "entity": {
+        "typeName": "postgresql_instance",
+        "attributes": {
+            "qualifiedName": "${qualifiedName}",
+            "name": "${name}",
+            "rdbms_type": "Postgresql",
+            "platform": "centos",
+            "cloudOrOnPrem": "onPrem",
+            "hostname": "${host}",
+            "port": "${port}",
+            "description": "postgresql_instance",
+            "owner": "root"
+        }
+    }
+}

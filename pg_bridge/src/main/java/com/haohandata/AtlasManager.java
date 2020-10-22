@@ -1,5 +1,6 @@
 package com.haohandata;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -28,12 +29,14 @@ public class AtlasManager {
     private String atlasUrl;
     private Set<Integer> entitySet; // 记录当前处理的数据库对象，避免重复操作
     private Map<String, String> entityMap;
+    private Gson gson;
 
     public AtlasManager() {
         this.atlasUrl = MessageFormat.format("http://{0}:{1}/api/atlas/v2", Constant.ATLAS_IP,
                 String.valueOf(Constant.ATLAS_PORT));
         this.entitySet = new HashSet<>();
         this.entityMap = new HashMap<>();
+        this.gson = new Gson();
     }
 
     public void createEntity(DDLEvent event) {
@@ -50,9 +53,9 @@ public class AtlasManager {
                 String pgInstanceGuid = checkInstance(ra, pgInstanceName);
                 String pgDBName = MessageFormat.format("{0}@{1}:{2}@postgresql", Constant.DB_NAME, Constant.DB_HOST,
                         String.valueOf(Constant.DB_PORT));
-                String pgDBGuid = checkDB(ra,pgDBName);
-                String tableName = event.getObjectIdentity().substring(event.getObjectIdentity().indexOf(".")+1);
-                createTable(ra, tableName, pgDBGuid);
+                String pgDBGuid = checkDB(ra, pgDBName, pgInstanceGuid);
+                String tableName = event.getObjectIdentity().substring(event.getObjectIdentity().indexOf(".") + 1);
+                createTable(ra, pgDBName, tableName, pgDBGuid);
             } catch (MalformedURLException e) {
                 e.printStackTrace();
                 logger.error(e.getMessage());
@@ -60,32 +63,100 @@ public class AtlasManager {
         }
     }
 
-    public String createTable(RemoteAccess ra, String tableName, String guid){
+    public void removeEntity(DDLEvent event) {
+        String api = this.atlasUrl + "/entity/guid/";
+        if (!entitySet.contains(event.getObjId())) {
+            searchByType("postgresql_table");
+        }
+        String tableName = event.getObjectIdentity().substring(event.getObjectIdentity().indexOf(".") + 1);
+        String key = MessageFormat.format("{0}@{1}@{2}:{3}@postgresql", tableName, Constant.DB_NAME, Constant.DB_HOST,
+                String.valueOf(Constant.DB_PORT));
+        String guid = entityMap.getOrDefault(key, null);
+        if (null != guid) {
+            api += guid;
+            RemoteAccess ra;
+            try {
+                ra = new RemoteAccess(api);
+                ra.build();
+                ra.delete(new ArrayList<HttpParam>() {
+                });
+            } catch (MalformedURLException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            // ra.delete()
+        }
+    }
+
+    private String createTable(RemoteAccess ra, String dbName, String tableName, String dbGuid) {
         String tableGuid = null;
         System.out.println("crate table =>" + tableName);
+        Map<String, String> model = new HashMap<>();
+        model.put("qualifiedName", tableName + "@" + dbName);
+        model.put("name", tableName);
+        model.put("dbGuid", dbGuid);
+        FreeMarkerTemplate ft;
+        try {
+            ft = FreeMarkerTemplate.getInstance();
+            String jsonBody = ft.transferTemplateToString("pg_table.json", model);
+            List<RemoteResponse> responseList = ra.post(new ArrayList<HttpParam>(), jsonBody);
+            if (responseList.size() > 0) {
+                RemoteResponse response = responseList.get(0);
+                JsonElement jsonResult = gson.fromJson(response.getResponse(), JsonElement.class);
+                tableGuid = jsonResult.getAsJsonObject().getAsJsonObject("mutatedEntities").getAsJsonArray("CREATE")
+                        .get(0).getAsJsonObject().get("guid").getAsString();
+                System.out.println(tableGuid);
+            }
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         return tableGuid;
     }
 
-    public String checkDB(RemoteAccess ra, String pgDBName) {
+    private String checkDB(RemoteAccess ra, String pgDBName, String instanceGuid) {
         String pgDBGuid = null;
         if (this.entityMap.containsKey(pgDBName)) {
-            pgDBGuid = entityMap.get(pgDBGuid);
+            pgDBGuid = entityMap.get(pgDBName);
         } else {
             searchByType("postgresql_db");
             if (!this.entityMap.containsKey(pgDBName)) {
-                pgDBGuid = createDB(ra, pgDBName);
+                pgDBGuid = createDB(ra, pgDBName, instanceGuid);
                 this.entityMap.put(pgDBName, pgDBGuid);
+            } else {
+                pgDBGuid = entityMap.get(pgDBName);
             }
         }
         return pgDBGuid;
     }
 
-    public String createDB(RemoteAccess ra, String dbName){
-        System.out.println("create database =>" + dbName);
-        return null;
+    private String createDB(RemoteAccess ra, String dbName, String instanceGuid) {
+        String guid = null;
+        logger.info("create database =>" + dbName);
+        Map<String, String> model = new HashMap<>();
+        model.put("qualifiedName", dbName);
+        model.put("name", dbName);
+        model.put("instanceGuid", instanceGuid);
+        FreeMarkerTemplate ft;
+        try {
+            ft = FreeMarkerTemplate.getInstance();
+            String jsonBody = ft.transferTemplateToString("pg_database.json", model);
+            List<RemoteResponse> responseList = ra.post(new ArrayList<HttpParam>(), jsonBody);
+            if (responseList.size() > 0) {
+                RemoteResponse response = responseList.get(0);
+                JsonElement jsonResult = gson.fromJson(response.getResponse(), JsonElement.class);
+                guid = jsonResult.getAsJsonObject().getAsJsonObject("mutatedEntities").getAsJsonArray("CREATE").get(0)
+                        .getAsJsonObject().get("guid").getAsString();
+                System.out.println(guid);
+            }
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        return guid;
     }
 
-    public String checkInstance(RemoteAccess ra, String pgInstanceName) {
+    private String checkInstance(RemoteAccess ra, String pgInstanceName) {
         String pgInstanceGuid = null;
         if (this.entityMap.containsKey(pgInstanceName)) {
             pgInstanceGuid = entityMap.get(pgInstanceName);
@@ -94,14 +165,39 @@ public class AtlasManager {
             if (!this.entityMap.containsKey(pgInstanceName)) {
                 pgInstanceGuid = createInstance(ra, pgInstanceName);
                 this.entityMap.put(pgInstanceName, pgInstanceGuid);
+            } else {
+                pgInstanceGuid = entityMap.get(pgInstanceName);
             }
         }
         return pgInstanceGuid;
     }
 
-    public String createInstance(RemoteAccess ra, String instanceName) {
-        System.out.println("create instance =>" + instanceName);
-        return null;
+    private String createInstance(RemoteAccess ra, String instanceName) {
+        String instanceGuid = null;
+        logger.info("create instance =>" + instanceName);
+        Map<String, String> model = new HashMap<>();
+        model.put("qualifiedName", instanceName);
+        model.put("name", instanceName);
+        model.put("host", Constant.DB_HOST);
+        model.put("port", String.valueOf(Constant.DB_PORT));
+        FreeMarkerTemplate ft;
+        try {
+            ft = FreeMarkerTemplate.getInstance();
+            String jsonBody = ft.transferTemplateToString("pg_instance.json", model);
+            List<RemoteResponse> responseList = ra.post(new ArrayList<HttpParam>(), jsonBody);
+            if (responseList.size() > 0) {
+                RemoteResponse response = responseList.get(0);
+                JsonElement jsonResult = gson.fromJson(response.getResponse(), JsonElement.class);
+                instanceGuid = jsonResult.getAsJsonObject().getAsJsonObject("mutatedEntities").getAsJsonArray("CREATE")
+                        .get(0).getAsJsonObject().get("guid").getAsString();
+                System.out.println(instanceGuid);
+            }
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+        return instanceGuid;
     }
 
     /**
@@ -110,7 +206,7 @@ public class AtlasManager {
      * @param typeName
      * @return
      */
-    public List<EntityModel> searchByType(String typeName) {
+    private List<EntityModel> searchByType(String typeName) {
         List<EntityModel> qualifiedNameList = new ArrayList<>();
         String api = this.atlasUrl + "/search/basic";
         List<HttpParam> httpParams = new ArrayList<>();
@@ -121,7 +217,6 @@ public class AtlasManager {
             ra.build();
             List<RemoteResponse> responseList = ra.get(httpParams);
             for (RemoteResponse response : responseList) {
-                Gson gson = new Gson();
                 JsonElement jElement = gson.fromJson(response.getResponse(), JsonElement.class);
                 JsonObject jObject = jElement.getAsJsonObject();
                 JsonArray entityArray = jObject.get("entities").getAsJsonArray();

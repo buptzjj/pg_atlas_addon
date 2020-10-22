@@ -32,6 +32,7 @@ public final class App {
      * @throws ClassNotFoundException
      */
     public static void main(String[] args) throws ClassNotFoundException {
+        System.out.println(System.getProperty("user.dir"));
         String url = MessageFormat.format("jdbc:postgresql://{0}:{1}/{2}", Constant.DB_HOST,
                 String.valueOf(Constant.DB_PORT), Constant.DB_NAME);
         Connection conn;

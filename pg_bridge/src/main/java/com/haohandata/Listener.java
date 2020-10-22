@@ -51,10 +51,14 @@ public class Listener extends Thread {
                                 }.getType());
                         if (null != ddlEventList) {
                             for (DDLEvent ddlEvent : ddlEventList) {
-                                // System.out.println(ddlEvent.toString());
+                                System.out.println(ddlEvent.toString());
                                 if (ddlEvent.getEventTag().equalsIgnoreCase("CREATE TABLE")
                                         && ddlEvent.getObjectType().equalsIgnoreCase("table")) {
                                     this.atlasManager.createEntity(ddlEvent);
+                                }
+                                if (ddlEvent.getEventTag().equalsIgnoreCase("DROP TABLE")
+                                        && ddlEvent.getObjectType().equalsIgnoreCase("table")) {
+                                    this.atlasManager.removeEntity(ddlEvent);
                                 }
                             }
                         }

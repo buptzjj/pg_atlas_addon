@@ -1,0 +1,15 @@
+{
+    "entity": {
+        "typeName": "postgresql_db",
+        "attributes": {
+            "qualifiedName": "${qualifiedName}",
+            "name": "${name}",
+            "description": "postgresql database",
+            "owner": "root",
+            "instance": {
+                "guid": "${instanceGuid}",
+                "typeName": "postgresql_instance"
+            }
+        }
+    }
+}
